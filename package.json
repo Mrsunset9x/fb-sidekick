@@ -1,0 +1,25 @@
+{
+  "name": "contacts-rail",
+  "version": "1.1.8",
+  "private": true,
+  "description": "Brings the Contacts list back to Facebook's right column by docking Messenger there.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/test.mjs",
+    "icons": "node scripts/icons.mjs",
+    "pack": "npm run typecheck && node scripts/build.mjs --out release/unpacked && node scripts/pack.mjs",
+    "check": "npm run typecheck && node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.8",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}

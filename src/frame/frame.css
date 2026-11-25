@@ -1,0 +1,22 @@
+/*
+ * Applied inside the docked Messenger frame only, and only in compact mode.
+ * Facebook's own top bar is hidden: the panel already sits under it.
+ */
+[role='banner'] {
+  display: none !important;
+}
+:root {
+  --header-height: 0px !important;
+}
+/* Messenger's lists scroll inside themselves; the page around them must not scroll as well. */
+html,
+body {
+  overflow: hidden !important;
+}
+/*
+ * Messenger draws its own scrollbars. In a frame the browser's native one shows
+ * beside them, so there were two; keep Messenger's.
+ */
+* {
+  scrollbar-width: none !important;
+}
