@@ -14,6 +14,10 @@ Facebook removed the **Contacts** list from the right column on desktop for many
   refreshing Facebook returns to Contacts and opening another tab does not change it.
 - Contacts leaves space above an open bottom-docked chat window. The remaining list scrolls;
   closing or minimizing the chat restores the space.
+- Saves CPU in background tabs: after 5 minutes hidden, the panel unloads its Messenger frame and
+  loads it again when you return, keeping the last list on screen meanwhile. It stays loaded while
+  anyone has **Notify when active**, while the inbox view is open, or when **Pause in background
+  tabs** is turned off in the popup.
 - Follows Facebook's light and dark mode, colours and type. English and Vietnamese.
 - No runtime dependencies or analytics.
 
@@ -88,6 +92,7 @@ src/
     contact-actions.ts     row menu, preview card and dialogs
     menu.ts                shared keyboard handling for menus
     chat-opener.ts         ways to open Facebook's chat window (strategy list)
+    pause.ts               unloads the Messenger frame in long-hidden tabs
   frame/                   runs inside the hidden Messenger frame only
     main.ts                route reporting, link hand-off, commands from the page
     contacts.ts            reads the inbox rows (named finders)
@@ -152,6 +157,8 @@ that transition and removes the old panel, listeners and ranking frame until the
 
 - The list holds your recent conversations (Messenger's inbox), not every friend: Facebook no
   longer sends a full friends-online list to the page.
+- The hidden Messenger frame runs Messenger's own scripts, which use noticeable CPU while the tab is
+  open. Background tabs pause it (see above); a visible Facebook tab always keeps it loaded.
 - Moving between conversations in the inbox view adds entries to the tab's history, so the browser's
   Back button steps through them first.
 - Last-message previews, relative times and delete controls depend on the markup Messenger renders

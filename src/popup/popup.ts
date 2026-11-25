@@ -58,6 +58,7 @@ async function main(): Promise<void> {
   const [place, modes] = placement();
   const [compactRow, compact] = switchRow('compact', t('compact'), t('compactDesc'));
   const [onlineOnlyRow, onlineOnly] = switchRow('onlineOnly', t('onlyActive'), t('onlyActiveDesc'));
+  const [pauseRow, pauseHidden] = switchRow('pauseHidden', t('pauseHidden'), t('pauseHiddenDesc'));
 
   const statusText = h('p', {});
   const openButton = h('button', { class: 'action', type: 'button', hidden: true }, t('openFacebook'));
@@ -72,7 +73,7 @@ async function main(): Promise<void> {
       h('div', {}, h('h1', {}, t('extShortName')), h('p', {}, t('tagline'))),
     ),
     view,
-    h('div', { class: 'group' }, enabledRow, place, compactRow, onlineOnlyRow),
+    h('div', { class: 'group' }, enabledRow, place, compactRow, onlineOnlyRow, pauseRow),
     h('div', { class: 'status' }, statusText, openButton),
     h('p', { class: 'tip' }, t('tipEsc')),
   );
@@ -81,10 +82,12 @@ async function main(): Promise<void> {
     enabled.checked = s.enabled;
     compact.checked = s.compact;
     onlineOnly.checked = s.onlineOnly;
+    pauseHidden.checked = s.pauseHidden;
     modes[s.railMode].checked = true;
     place.disabled = !s.enabled;
     compact.disabled = !s.enabled;
     onlineOnly.disabled = !s.enabled;
+    pauseHidden.disabled = !s.enabled;
     view.dataset.mode = s.railMode;
     view.dataset.enabled = String(s.enabled);
   };
@@ -92,6 +95,7 @@ async function main(): Promise<void> {
   enabled.addEventListener('change', () => void settings.set({ enabled: enabled.checked }));
   compact.addEventListener('change', () => void settings.set({ compact: compact.checked }));
   onlineOnly.addEventListener('change', () => void settings.set({ onlineOnly: onlineOnly.checked }));
+  pauseHidden.addEventListener('change', () => void settings.set({ pauseHidden: pauseHidden.checked }));
   for (const [mode, input] of Object.entries(modes) as [RailMode, HTMLInputElement][]) {
     input.addEventListener('change', () => input.checked && void settings.set({ railMode: mode }));
   }

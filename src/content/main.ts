@@ -8,6 +8,7 @@
  *   ChatOpener[]  how a chosen contact opens a chat window   (chat-opener.ts)
  *   Ranking       who you interact with most, per Facebook   (ranking.ts)
  *   mergeContacts ranking + inbox -> the Contacts list       (merge.ts)
+ *   BackgroundPause unloads the frame in long-hidden tabs    (pause.ts)
  * Settings come from storage and are re-applied whenever the popup changes them.
  */
 import { settings, type Settings, type View } from '../shared/settings';
@@ -16,12 +17,14 @@ import { isThreadHref, listen, post, threadId, type ChatTarget, type Contact, ty
 import { people, type People } from '../shared/people';
 import { cameOnline, presenceSnapshot } from '../shared/presence';
 import { t } from '../shared/dom';
+import { log } from '../shared/log';
 import { RailWatcher, type RailGeometry } from './rail';
 import { layout } from './layout';
 import { Panel } from './panel';
 import { MessengerMenuOpener } from './chat-opener';
 import { Ranking } from './ranking';
 import { mergeContacts } from './merge';
+import { BackgroundPause, canPause } from './pause';
 import { deleteFailureCode, deleteFeedback } from '../shared/delete-feedback';
 import { extensionAlive, extensionCall, extensionTask, extensionValue, onExtensionInvalidated } from '../shared/runtime';
 
@@ -46,6 +49,27 @@ class Controller {
   #stopped = false;
   #opening = 0;
   readonly #opener = new MessengerMenuOpener();
+  readonly #pause = new BackgroundPause({
+    conditions: () => canPause({
+      enabled: this.#settings.pauseHidden,
+      hidden: document.visibilityState === 'hidden',
+      notifying: this.#people.notify.length,
+      view: this.#view,
+      busy: this.#deleting,
+    }),
+    pause: () => {
+      if (__DEV__) log('pause: frame unloaded in a background tab');
+      this.#panel.suspend();
+      this.#inThread = false;
+      // The next inbox read is a fresh snapshot: changes while paused must not notify.
+      this.#presence = null;
+    },
+    resume: () => {
+      if (__DEV__) log('pause: frame reloading');
+      this.#panel.resume();
+      this.#render();
+    },
+  });
   /** A deleted chat must not immediately return as a ranked suggestion. */
   readonly #deletedSuggestions = new Set<string>();
 
@@ -80,6 +104,7 @@ class Controller {
     if (this.#stopped || !extensionAlive()) { this.stop(); return; }
     document.body.prepend(this.#panel.host);
     this.#watcher.start();
+    this.#pause.start();
   }
 
   stop(): void {
@@ -87,6 +112,7 @@ class Controller {
     this.#stopped = true;
     this.#opener.cancel();
     this.#watcher.stop();
+    this.#pause.stop();
     this.#ranking.stop();
     this.#unlisten();
     extensionValue(() => chrome.runtime.onMessage.removeListener(this.#onRuntimeMessage), undefined);
@@ -97,11 +123,13 @@ class Controller {
   update(next: Settings): void {
     this.#settings = next;
     this.#render();
+    this.#pause.evaluate();
   }
 
   updatePeople(next: People): void {
     this.#people = next;
     this.#render();
+    this.#pause.evaluate();
   }
 
   #render(): void {
@@ -175,12 +203,14 @@ class Controller {
     } finally {
       this.#deleting = false;
       this.#panel.deleting = false;
+      this.#pause.evaluate();
     }
   }
 
   #setView(view: View): void {
     this.#view = view;
     this.#render();
+    this.#pause.evaluate();
     this.#send({ type: 'view', view });
   }
 

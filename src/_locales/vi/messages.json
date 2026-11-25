@@ -56,6 +56,8 @@
   "done": { "message": "Xong" },
   "onlyActive": { "message": "Chỉ hiện người đang hoạt động" },
   "onlyActiveDesc": { "message": "Danh sách liên hệ chỉ hiện những người đang hoạt động." },
+  "pauseHidden": { "message": "Tạm dừng khi tab chạy nền" },
+  "pauseHiddenDesc": { "message": "Sau 5 phút tab ở chế độ nền, Messenger trong panel được gỡ để tiết kiệm CPU và bộ nhớ, rồi tải lại khi bạn quay lại. Không áp dụng khi đang bật Thông báo khi hoạt động cho ai đó." },
   "noActiveContacts": { "message": "Hiện không có người liên hệ nào đang hoạt động." },
   "openChatInTab": { "message": "Mở trong tab mới" },
   "openChatInMessenger": { "message": "Mở trong Messenger" },

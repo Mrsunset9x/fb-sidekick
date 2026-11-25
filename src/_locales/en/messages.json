@@ -56,6 +56,8 @@
   "done": { "message": "Done" },
   "onlyActive": { "message": "Only show who is active" },
   "onlyActiveDesc": { "message": "Show only people who are active now in the Contacts list." },
+  "pauseHidden": { "message": "Pause in background tabs" },
+  "pauseHiddenDesc": { "message": "After 5 minutes in a background tab, Messenger inside the panel is unloaded to save CPU and memory. It loads again when you come back. Not used while Notify when active is on for anyone." },
   "noActiveContacts": { "message": "No contacts are active now." },
   "openChatInTab": { "message": "Open in new tab" },
   "openChatInMessenger": { "message": "Open in Messenger" },

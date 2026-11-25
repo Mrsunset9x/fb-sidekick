@@ -33,6 +33,11 @@ export interface Settings {
   /** Legacy storage field. Current panel navigation is page-local and starts on contacts. */
   view: View;
   onlineOnly: boolean;
+  /**
+   * Unload the hidden Messenger frame after a tab has been in the background for a while.
+   * Skipped while anyone has "Notify when active", because those alerts need a live inbox.
+   */
+  pauseHidden: boolean;
 }
 
 export const DEFAULTS: Readonly<Settings> = Object.freeze({
@@ -43,6 +48,7 @@ export const DEFAULTS: Readonly<Settings> = Object.freeze({
   wide: false,
   view: 'contacts',
   onlineOnly: false,
+  pauseHidden: true,
 });
 
 /** Settings with a fixed set of values; anything else falls back to the default. */

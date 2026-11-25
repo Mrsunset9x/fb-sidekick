@@ -18,7 +18,8 @@ import { ContactActions } from './contact-actions';
 import { menuItem, menuKeys } from './menu';
 import { extensionValue } from '../shared/runtime';
 
-export type FrameStatus = 'idle' | 'loading' | 'ready' | 'error';
+/** 'refreshing': the frame reloads after a background pause while the last list stays visible. */
+export type FrameStatus = 'idle' | 'loading' | 'refreshing' | 'ready' | 'error';
 
 export interface PanelBox {
   left: number;
@@ -75,6 +76,8 @@ export class Panel {
   readonly #events = new AbortController();
   readonly #number = new Intl.NumberFormat(extensionValue(() => chrome.i18n.getUILanguage(), 'en'));
   #frame: HTMLIFrameElement | null = null;
+  /** The frame was unloaded while the tab is in the background (see pause.ts). */
+  #suspended = false;
   #timeout = 0;
   #state: PanelState | null = null;
   #contacts: readonly Contact[] = [];
@@ -259,7 +262,7 @@ export class Panel {
       this.#frame.tabIndex = inbox ? 0 : -1;
       this.#frame.toggleAttribute('aria-hidden', !inbox);
     }
-    if (!collapsed && !this.#frame) this.#createFrame();
+    if (!collapsed && !this.#frame && !this.#suspended) this.#createFrame();
     this.#overlays.update(this.#contacts, people);
   }
 
@@ -269,7 +272,23 @@ export class Panel {
     if (this.#title.textContent !== title) this.#title.textContent = title;
   }
 
+  /** Removes the Messenger frame; the Contacts list keeps showing what it last read. */
+  suspend(): void {
+    this.#suspended = true;
+    clearTimeout(this.#timeout);
+    this.#frame?.remove();
+    this.#frame = null;
+  }
+
+  /** Loads the frame again after `suspend()`, without hiding the list behind a skeleton. */
+  resume(): void {
+    if (!this.#suspended) return;
+    this.#suspended = false;
+    if (this.#state && !this.#state.collapsed) this.#createFrame(this.#contacts.length > 0);
+  }
+
   reload(): void {
+    this.#suspended = false;
     if (!this.#frame) return this.#createFrame();
     this.#setStatus('loading');
     this.#armTimeout();
@@ -291,7 +310,7 @@ export class Panel {
     this.host.remove();
   }
 
-  #createFrame(): void {
+  #createFrame(refreshing = false): void {
     const frame = h('iframe', {
       name: FRAME_NAME,
       title: t('frameTitle'),
@@ -302,12 +321,13 @@ export class Panel {
     // The page cannot look inside the frame (Messenger relaxes its document.domain),
     // and a blocked frame fires `load` too: silence after load means it failed.
     frame.addEventListener('load', () => {
-      if (this.host.dataset.status !== 'loading') return;
+      const status = this.host.dataset.status;
+      if (status !== 'loading' && status !== 'refreshing') return;
       clearTimeout(this.#timeout);
       this.#timeout = window.setTimeout(() => this.#setStatus('error'), READY_GRACE_MS);
     });
     this.#frame = frame;
-    this.#setStatus('loading');
+    this.#setStatus(refreshing ? 'refreshing' : 'loading');
     this.#armTimeout();
     frame.src = `${location.origin}/messages/`;
     this.#body.append(frame);
