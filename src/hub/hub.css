@@ -1,0 +1,248 @@
+/*
+ * The floating FB Sidekick button and its panel, bottom left: away from
+ * Facebook's chat windows on the right. Facebook's colour variables inherit
+ * through the shadow boundary, so it follows light and dark mode.
+ */
+:host {
+  --sk-surface: var(--surface-background, #fff);
+  --sk-ink: var(--primary-text, #080809);
+  --sk-muted: var(--secondary-text, #65686c);
+  --sk-control: var(--secondary-button-background, #e2e5e9);
+  --sk-hover: var(--hover-overlay, rgba(0, 0, 0, 0.05));
+  --sk-divider: var(--divider, #ced0d4);
+  --sk-accent: var(--primary-button-background, #0866ff);
+  --sk-negative: var(--negative, #d92142);
+  --sk-shadow: 0 12px 28px 0 var(--shadow-2, rgba(0, 0, 0, 0.2)), 0 2px 4px 0 var(--shadow-1, rgba(0, 0, 0, 0.1));
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 300;
+  font: 15px/1.33 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--sk-ink);
+}
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--accent, #0866ff);
+  outline-offset: 2px;
+}
+
+.launcher {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sk-surface);
+  box-shadow: var(--sk-shadow);
+  cursor: pointer;
+}
+.launcher:hover {
+  background: var(--sk-control);
+}
+.launcher[aria-expanded='true'] {
+  color: var(--sk-accent);
+}
+.dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--sk-surface);
+  border-radius: 50%;
+  background: var(--sk-accent);
+}
+
+.panel {
+  position: absolute;
+  left: 0;
+  bottom: 60px;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+  border-radius: 8px;
+  background: var(--sk-surface);
+  box-shadow: var(--sk-shadow);
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+.close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--sk-muted);
+  background: var(--sk-control);
+  cursor: pointer;
+}
+.section-title {
+  margin: 16px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sk-muted);
+}
+
+/* Quick settings: label left, switch right. */
+.panel > .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+}
+.panel > .row label {
+  cursor: pointer;
+}
+.switch {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  border-radius: 10px;
+  background: var(--sk-divider);
+  cursor: pointer;
+  transition: background-color 150ms;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 150ms;
+}
+.switch:checked {
+  background: var(--sk-accent);
+}
+.switch:checked::after {
+  transform: translateX(16px);
+}
+.switch:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.links {
+  display: grid;
+}
+.link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 0 8px;
+  margin: 0 -8px;
+  border: 0;
+  border-radius: 6px;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+}
+.link:hover:not(:disabled) {
+  background: var(--sk-hover);
+}
+.link:disabled {
+  color: var(--sk-muted);
+  cursor: default;
+}
+.soon {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--sk-control);
+}
+
+/* The bulk tool (src/cleanup/toolbar.ts). */
+.tool .count,
+.tool .status {
+  margin: 0 0 8px;
+}
+.tool .status:empty {
+  display: none;
+}
+.tool .hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--sk-muted);
+}
+.tool .row,
+.card .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.card .row.end {
+  justify-content: flex-end;
+  margin: 16px 0 0;
+}
+.button {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  font-weight: 600;
+  background: var(--sk-control);
+  cursor: pointer;
+}
+.button:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+.button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.danger {
+  color: #fff;
+  background: var(--sk-negative);
+}
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.4);
+}
+.card {
+  width: min(420px, calc(100vw - 32px));
+  padding: 20px;
+  border-radius: 8px;
+  background: var(--sk-surface);
+  box-shadow: var(--sk-shadow);
+}
+.card h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+.card p {
+  margin: 0;
+  color: var(--sk-muted);
+}

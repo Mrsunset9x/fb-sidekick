@@ -38,6 +38,8 @@ export interface Settings {
    * Skipped while anyone has "Notify when active", because those alerts need a live inbox.
    */
   pauseHidden: boolean;
+  /** The floating FB Sidekick button: quick settings and the bulk tools (src/hub). */
+  hub: boolean;
 }
 
 export const DEFAULTS: Readonly<Settings> = Object.freeze({
@@ -49,6 +51,7 @@ export const DEFAULTS: Readonly<Settings> = Object.freeze({
   view: 'contacts',
   onlineOnly: false,
   pauseHidden: true,
+  hub: true,
 });
 
 /** Settings with a fixed set of values; anything else falls back to the default. */

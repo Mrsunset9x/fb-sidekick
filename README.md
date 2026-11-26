@@ -21,6 +21,17 @@ Facebook removed the **Contacts** list from the right column on desktop for many
 - Follows Facebook's light and dark mode, colours and type. English and Vietnamese.
 - No runtime dependencies or analytics.
 
+## FB Sidekick button and clean-up tools
+
+A floating button at the bottom left of every Facebook page opens quick settings (Contacts panel,
+active-only, pause in background tabs) and the clean-up tools. It can be hidden in the popup.
+
+- **Unsave in bulk** on `facebook.com/saved`: tick items (a checkbox appears on each), or select all
+  loaded, **Load all**, then confirm. Items are unsaved one at a time, 3–7 s apart, with a 2–3 minute
+  break after every 25 and at most 200 actions a day across tabs. The run stops at the first control
+  it cannot identify exactly, an unconfirmed result, or any Facebook limit or security message.
+- Removing likes and comments, and unfollowing, are planned (`docs/PLAN-cleanup.md`).
+
 ## Contacts controls
 
 - Hover or focus a row to see its More button. Right-click, Shift+F10 and the context-menu key
@@ -93,6 +104,8 @@ src/
     menu.ts                shared keyboard handling for menus
     chat-opener.ts         ways to open Facebook's chat window (strategy list)
     pause.ts               unloads the Messenger frame in long-hidden tabs
+  hub/                     the floating FB Sidekick button: quick settings, tool host
+  cleanup/                 bulk tools: runner (pace, daily limit, stop rules), page adapters
   frame/                   runs inside the hidden Messenger frame only
     main.ts                route reporting, link hand-off, commands from the page
     contacts.ts            reads the inbox rows (named finders)

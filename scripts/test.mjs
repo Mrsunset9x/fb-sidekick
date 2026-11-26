@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const temporary = await mkdtemp(join(root, '.test-'));
-const suites = ['contacts', 'delete', 'background', 'runtime', 'build', 'layout', 'pause'];
+const suites = ['contacts', 'delete', 'background', 'runtime', 'build', 'layout', 'pause', 'cleanup'];
 const outputs = suites.map((suite) => join(temporary, `${suite}.test.mjs`));
 try {
   await build({

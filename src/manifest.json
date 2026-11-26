@@ -3,7 +3,7 @@
   "name": "__MSG_extName__",
   "short_name": "__MSG_extShortName__",
   "description": "__MSG_extDescription__",
-  "version": "1.1.9",
+  "version": "1.2.0",
   "default_locale": "en",
   "minimum_chrome_version": "121",
   "icons": {
@@ -24,9 +24,19 @@
     "page": "popup.html",
     "open_in_tab": false
   },
-  "permissions": ["storage", "declarativeNetRequest", "notifications"],
-  "background": { "service_worker": "background.js", "type": "module" },
-  "host_permissions": ["https://www.facebook.com/*", "https://web.facebook.com/*"],
+  "permissions": [
+    "storage",
+    "declarativeNetRequest",
+    "notifications"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "host_permissions": [
+    "https://www.facebook.com/*",
+    "https://web.facebook.com/*"
+  ],
   "declarative_net_request": {
     "rule_resources": [
       {
@@ -38,19 +48,44 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.facebook.com/*", "https://web.facebook.com/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://www.facebook.com/*",
+        "https://web.facebook.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://www.facebook.com/messages*", "https://web.facebook.com/messages*"],
-      "js": ["frame.js"],
+      "matches": [
+        "https://www.facebook.com/*",
+        "https://web.facebook.com/*"
+      ],
+      "js": [
+        "hub.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.facebook.com/messages*",
+        "https://web.facebook.com/messages*"
+      ],
+      "js": [
+        "frame.js"
+      ],
       "run_at": "document_start",
       "all_frames": true
     },
     {
-      "matches": ["https://www.facebook.com/messages*", "https://web.facebook.com/messages*"],
-      "js": ["quiet.js"],
+      "matches": [
+        "https://www.facebook.com/messages*",
+        "https://web.facebook.com/messages*"
+      ],
+      "js": [
+        "quiet.js"
+      ],
       "run_at": "document_start",
       "all_frames": true,
       "world": "MAIN"

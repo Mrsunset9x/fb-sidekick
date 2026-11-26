@@ -95,7 +95,7 @@ const shared = {
 
 const builds = [
   {
-    entryPoints: { content: 'src/content/main.ts', frame: 'src/frame/main.ts', quiet: 'src/frame/quiet.ts' },
+    entryPoints: { content: 'src/content/main.ts', hub: 'src/hub/main.ts', frame: 'src/frame/main.ts', quiet: 'src/frame/quiet.ts' },
     format: 'iife',
   },
   { entryPoints: { popup: 'src/popup/popup.ts', background: 'src/background/main.ts' }, format: 'esm' },
