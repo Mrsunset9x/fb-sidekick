@@ -21,7 +21,56 @@ export const visibleMenus = (): HTMLElement[] =>
   [...document.querySelectorAll<HTMLElement>('[role="menu"]')].filter(visible);
 
 export const visibleDialogs = (): HTMLElement[] =>
-  [...document.querySelectorAll<HTMLElement>('[role="dialog"], [role="alertdialog"]')].filter(visible);
+  [...document.querySelectorAll<HTMLElement>('[role="dialog"], [role="alertdialog"], dialog[open]')].filter(visible);
+
+export const MAIN_SELECTOR = '[role="main"]';
+
+/** Watch the content column and direct child changes along its ancestor chain. */
+export function watchMain(sync: (main: HTMLElement | null) => void): () => void {
+  let frame = 0;
+  let scope: Element[] | null = null;
+  const schedule = () => {
+    if (!frame) frame = requestAnimationFrame(refresh);
+  };
+  const observer = new MutationObserver((records) => {
+    // Updating our own Saved control must not trigger another read of Facebook's list.
+    if (records.some((record) => record.type !== 'attributes' ||
+      !(record.target instanceof Element && record.target.matches('[data-fb-sidekick="check"]')))) {
+      schedule();
+    }
+  });
+  function refresh(): void {
+    frame = 0;
+    const main = document.querySelector<HTMLElement>(MAIN_SELECTOR);
+    const ancestors: Element[] = [];
+    for (let node: Element | null = main; node; node = node.parentElement) ancestors.push(node);
+    const previous = scope;
+    if (!previous || ancestors.length !== previous.length || ancestors.some((node, i) => node !== previous[i])) {
+      observer.disconnect();
+      previous?.[0]?.removeEventListener('change', schedule, true);
+      scope = ancestors;
+      if (main) {
+        // Native inputs can update their checked property without changing an attribute.
+        main.addEventListener('change', schedule, true);
+        observer.observe(main, {
+          childList: true, subtree: true, characterData: true,
+          attributeFilter: ['aria-checked', 'aria-label', 'aria-hidden', 'hidden', 'href', 'role'],
+        });
+        for (const ancestor of ancestors.slice(1)) observer.observe(ancestor, { childList: true });
+      } else {
+        // Navigation may temporarily remove main. Watch for its arrival until it can be scoped again.
+        observer.observe(document.documentElement, { childList: true, subtree: true, attributeFilter: ['role'] });
+      }
+    }
+    sync(main);
+  }
+  refresh();
+  return () => {
+    observer.disconnect();
+    scope?.[0]?.removeEventListener('change', schedule, true);
+    if (frame) cancelAnimationFrame(frame);
+  };
+}
 
 /** Polls `find` every 100 ms until it returns something truthy, the time runs out or the signal aborts. */
 export async function waitFor<T>(find: () => T | null | undefined | false, ms: number, signal?: AbortSignal): Promise<T | null> {

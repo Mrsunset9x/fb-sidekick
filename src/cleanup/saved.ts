@@ -7,7 +7,7 @@
  * page is where unsaving happens.
  */
 import type { ActOutcome } from './runner';
-import { blockedDialog, closeMenus, labelOf, normalize, visible, visibleMenus, waitFor } from './dom';
+import { blockedDialog, closeMenus, labelOf, MAIN_SELECTOR, normalize, visible, visibleMenus, waitFor } from './dom';
 
 /** Prefix of each item's "more actions" button label. English is a best guess until seen. */
 const MORE_PREFIXES = ['hành động khác, ', 'more actions, ', 'more options for ', 'more options, '];
@@ -58,8 +58,7 @@ function linkKey(box: HTMLElement): string | null {
   return null;
 }
 
-export function readSaved(): SavedItem[] {
-  const main = document.querySelector<HTMLElement>('[role="main"]');
+export function readSaved(main = document.querySelector<HTMLElement>(MAIN_SELECTOR)): SavedItem[] {
   if (!main) return [];
   const items: SavedItem[] = [];
   const seen = new Set<string>();
@@ -84,6 +83,7 @@ export async function unsave(target: SavedItem, signal: AbortSignal): Promise<Ac
   const item = target.button.isConnected ? target : stillSaved(target.key);
   if (!item) return 'skipped';
   if (!(await closeMenus())) return 'unidentified';
+  if (signal.aborted) return 'stopped';
 
   item.button.scrollIntoView({ block: 'center' });
   item.button.click();

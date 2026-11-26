@@ -188,7 +188,8 @@ h2 {
 .tool .status:empty {
   display: none;
 }
-.tool .hint {
+.tool .hint,
+.activity-hint {
   margin: 8px 0 0;
   font-size: 13px;
   color: var(--sk-muted);

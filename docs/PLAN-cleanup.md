@@ -1,7 +1,7 @@
 # Dọn dẹp hàng loạt: nghiên cứu và kế hoạch
 
-> Trạng thái (26/11/2026): **mới nghiên cứu, chưa code.** Ba tính năng: bỏ lưu bài viết hàng loạt,
-> gỡ like/cảm xúc và xoá bình luận hàng loạt, bỏ theo dõi hàng loạt.
+> Trạng thái v1.3.0 (26/11/2026): đã triển khai bỏ lưu, gỡ like và cảm xúc, xoá bình luận.
+> Còn kiểm tra hộp xác nhận và kết quả gỡ trên Nhật ký hoạt động thật. Bỏ theo dõi đang trong kế hoạch.
 
 ## 1. Khảo sát trên Facebook thật (chỉ đọc, không thực hiện hành động nào)
 
@@ -14,7 +14,7 @@
 
 Ghi chú:
 
-- URL Nhật ký hoạt động dùng `.../allactivity?category_key=...`. Danh sách tải dần khi cuộn, khoảng
+- URL Nhật ký hoạt động dùng `.../allactivity/?category_key=...`. Danh sách tải dần khi cuộn, khoảng
   25 dòng mỗi lần.
 - Tài khoản hiện theo dõi khoảng 706 mục, gồm cả người và trang.
 - **Menu bỏ theo dõi có "Chặn" ngay cạnh.** Chỉ được chọn mục theo nhãn chính xác, tuyệt đối không
@@ -37,58 +37,39 @@ Ghi chú:
    hiện thao tác không hoàn tác được, và việc gỡ header `X-Frame-Options`. Code dọn dẹp nằm riêng
    trong `src/cleanup/` và có công tắc bật/tắt trong popup.
 
-## 3. Thiết kế đề xuất
+## 3. Cách dùng và hành vi trong v1.3.0
 
 ### Giao diện
 
-- Một thanh công cụ nổi (shadow DOM, dùng biến CSS của Facebook) **chỉ xuất hiện trên đúng 4 trang**
-  ở trên.
-- Thanh có: số mục đã tải, **Chọn tất cả đang hiển thị**, **Tải thêm** (tự cuộn đến N mục hoặc đến
-  hết), **Bắt đầu**, **Tạm dừng / Dừng**, thanh tiến độ và nhật ký từng mục.
-- Bỏ lưu và bỏ theo dõi: mỗi dòng có checkbox do extension thêm vào, để người dùng chọn hoặc bỏ chọn
-  từng mục trước khi chạy. Có lọc theo tên, ví dụ chỉ chọn các trang "Cho thuê…".
-- **Hộp xác nhận bắt buộc**: nêu rõ số mục, loại thao tác, cho biết không hoàn tác được. Nút nguy
-  hiểm có màu đỏ và không được focus sẵn.
+- Trang **Đã lưu** có ô chọn tròn trên từng thẻ. Nhấn Shift khi bấm để chọn một dải.
+  Tab đưa tiêu điểm đến ô chọn, rồi nhấn Space hoặc Enter để đổi trạng thái.
+- Hai mục **Gỡ like và cảm xúc** và **Xoá bình luận** trong FB Sidekick mở thẳng danh mục tương ứng.
+  Lần đầu, công cụ tìm liên kết trong thanh điều hướng của Nhật ký hoạt động. Các lần sau có thể
+  dùng lại đường dẫn đã lưu. Trên trang tổng quan và **Bình luận và cảm xúc**, bảng có hai nút để mở
+  danh mục. Nếu không tìm được mục, bảng hướng dẫn mở bằng tay.
+- Nhật ký hoạt động dùng ô chọn của Facebook. **Chọn tất cả đã tải**, **Bỏ chọn** và **Tải hết**
+  nằm trong bảng FB Sidekick. Khi bắt đầu một lô, Facebook chỉ giữ dấu chọn của các dòng trong lô đó.
+- Hộp xác nhận của FB Sidekick ghi số mục, thao tác và hậu quả. Nút **Huỷ** nhận tiêu điểm ban đầu.
 
-### Bộ chạy (dùng chung cho cả 3 tính năng)
+### Bộ chạy dùng chung
 
-- Hàng đợi, mỗi lần làm một mục:
-  1. mở menu của dòng;
-  2. tìm mục theo **nhãn chính xác** (bảng nhãn tiếng Anh và tiếng Việt);
-  3. bấm;
-  4. nếu có hộp xác nhận thì bấm nút xác nhận đã nhận diện được;
-  5. **kiểm tra lại** rằng dòng đã biến mất hoặc đã đổi trạng thái.
-- Nhịp chạy: nghỉ ngẫu nhiên 3–7 giây giữa các mục, nghỉ 2–3 phút sau mỗi 25 mục, và giới hạn mỗi
-  ngày (mặc định 200 mục, chỉnh được).
-- **Dừng ngay, không thử lại** khi:
-  - không nhận diện được nút;
-  - menu chứa mục lạ;
-  - xuất hiện hộp thoại có chữ "tạm thời bị chặn", "temporarily blocked", "checkpoint", "thử lại sau"…;
-  - tab bị ẩn quá lâu;
-  - người dùng bấm Dừng.
-- Like và bình luận: ưu tiên **dùng chế độ chọn nhiều có sẵn của Facebook** (tick checkbox theo lô
-  25 mục → bấm "Gỡ" → xác nhận). Cách này gửi ít request hơn và đi đúng luồng chính thức.
-- Lưu tiến độ vào `chrome.storage.local` để sau khi tải lại trang có thể chạy tiếp. Nhật ký chỉ
-  ghi số lượng, không ghi nội dung.
+- Bỏ lưu lần lượt, cách 3–7 giây và nghỉ 2–3 phút sau mỗi 25 mục.
+- Với Nhật ký hoạt động, mỗi lô tối đa 25 dòng. Công cụ đối chiếu các ô đang chọn với lô hiện tại,
+  bấm **Gỡ**, tìm nút xác nhận theo nhãn tiếng Việt hoặc tiếng Anh, rồi kiểm tra từng dòng đã rời
+  danh sách. Các lô cách nhau 2–3 phút.
+- Bỏ lưu, gỡ cảm xúc và xoá bình luận dùng chung giới hạn 200 dòng đã xác nhận mỗi ngày trên các tab.
+  Bộ đếm lưu trong `chrome.storage.local`. Hàng đợi tồn tại trong tab đang chạy.
+- Công cụ dừng khi nút hoặc tập ô đã chọn không xác định được, khi kết quả không xác minh được,
+  khi Facebook báo giới hạn hoặc bảo mật, hoặc khi người dùng bấm **Dừng**.
 
-### Code
+### Mã nguồn và kiểm tra
 
-- Thư mục `src/cleanup/`:
-  - `main.ts`: nhận diện trang và gắn thanh công cụ;
-  - `runner.ts`: hàng đợi, nhịp chạy, điều kiện dừng (hàm thuần, test được);
-  - `finders.ts`: dòng, nút menu, bảng nhãn;
-  - `saved.ts`, `activity.ts`, `following.ts`;
-  - `toolbar.ts`/`.css`.
-- Thêm một content script `cleanup.js` vào manifest hiện có.
-- Không cần quyền mới: chỉ `storage` và host `facebook.com`.
-- Test: runner (nhịp, giới hạn ngày, dừng khi gặp cảnh báo), finders với DOM mẫu như
-  `tests/delete.test.ts` (không bấm "Chặn" dù nằm cạnh, nhãn lạ thì dừng).
-
-### Thứ tự làm đề xuất
-
-1. Bộ chạy chung, thanh công cụ và **Bỏ lưu** (an toàn nhất: menu chỉ có 1 mục).
-2. **Gỡ like / xoá bình luận** qua chế độ chọn nhiều của Nhật ký hoạt động.
-3. **Bỏ theo dõi** (rủi ro bấm nhầm "Chặn" cao nhất, nên làm sau cùng và test kỹ nhất).
-
-Mỗi bước kiểm tra trên tài khoản thật **với 1–2 mục do người dùng tự chọn và đồng ý**, trước khi cho
-chạy hàng loạt.
+- `src/hub/main.ts` nhận diện trang và mục đang mở. `src/cleanup/dom.ts` theo dõi cột chính và
+  gộp các thay đổi vào một lượt đồng bộ mỗi khung hình.
+- `src/cleanup/saved.ts` xử lý mục đã lưu. `src/cleanup/activity.ts` nhận diện dòng, ô chọn,
+  nút gỡ và hộp xác nhận. `src/cleanup/runner.ts` xử lý hàng đợi, thời gian nghỉ và giới hạn ngày.
+  `src/cleanup/toolbar.ts` và `selection.css` hiển thị ô chọn và tiến độ.
+- `tests/cleanup.test.ts` kiểm tra nhãn, nhận diện mục, cách chia lô, giới hạn ngày và điều kiện dừng.
+- Cần xác nhận trên giao diện thật của cả hai mục: nhãn và phạm vi ô chọn, nhãn hộp thoại sau
+  **Gỡ**, việc các dòng rời danh sách và trạng thái khi xoá hết. Bản dev ghi nhãn nút và tiêu đề
+  hộp xác nhận trong phạm vi từ vựng giao diện, che nhãn ngoài phạm vi này.

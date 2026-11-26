@@ -1,0 +1,73 @@
+:where(.fbsk-selection-card) {
+  position: relative;
+}
+
+.fbsk-selection-card.fbsk-selection-active {
+  outline: 2px solid var(--primary-button-background, #0866ff);
+  outline-offset: -2px;
+}
+
+.fbsk-selection-check {
+  position: absolute;
+  z-index: 3;
+  top: 4px;
+  left: 4px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  animation: fbsk-selection-in 110ms ease-out both;
+}
+
+.fbsk-selection-check:focus-visible {
+  outline: 2px solid var(--primary-button-background, #0866ff);
+  outline-offset: 1px;
+}
+
+.fbsk-selection-circle {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--media-inner-border, rgb(0 0 0 / 18%));
+  border-radius: 50%;
+  background: var(--always-white, #fff);
+  color: var(--always-white, #fff);
+  box-shadow: 0 1px 3px var(--shadow-2, rgb(0 0 0 / 20%));
+}
+
+.fbsk-selection-check[aria-checked='true'] .fbsk-selection-circle {
+  background: var(--primary-button-background, #0866ff);
+  border-color: transparent;
+}
+
+.fbsk-selection-check[aria-checked='false'] svg {
+  visibility: hidden;
+}
+
+.fbsk-selection-check:disabled {
+  cursor: default;
+  opacity: .55;
+}
+
+.fbsk-native-selection-locked :is(input[type='checkbox'], [role='checkbox']) {
+  cursor: default;
+  opacity: .55;
+}
+
+@keyframes fbsk-selection-in {
+  from { opacity: 0; transform: scale(.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fbsk-selection-check { animation: none; }
+}

@@ -10,11 +10,14 @@ import css from './hub.css';
 import { h, t } from '../shared/dom';
 import type { Settings } from '../shared/settings';
 import type { Toolbar, BulkItem } from '../cleanup/toolbar';
+import type { ActivityCategory } from './activity-navigation';
 
 type Switch = 'enabled' | 'onlineOnly' | 'pauseHidden';
+type Tool = Pick<Toolbar<BulkItem>, 'el' | 'dialog' | 'mount' | 'destroy' | 'sync'>;
 
 export interface HubActions {
   set(patch: Partial<Settings>): void;
+  openActivity(category: ActivityCategory): void;
 }
 
 const SLIDERS = [
@@ -47,7 +50,10 @@ export class Hub {
   readonly #switches = new Map<Switch, HTMLInputElement>();
   readonly #toolSlot = h('div', { class: 'tool-slot' });
   readonly #links = h('div', { class: 'links' });
-  #tool: Toolbar<BulkItem> | null = null;
+  readonly #reactions = h('button', { class: 'link', type: 'button' }, t('bulkReactionsTitle'));
+  readonly #comments = h('button', { class: 'link', type: 'button' }, t('bulkCommentsTitle'));
+  readonly #activityHint = h('p', { class: 'activity-hint', role: 'status', hidden: true });
+  #tool: Tool | null = null;
 
   constructor(actions: HubActions) {
     this.#actions = actions;
@@ -58,11 +64,15 @@ export class Hub {
     const close = h('button', { class: 'close', type: 'button', title: t('hubClose'), 'aria-label': t('hubClose') }, '×');
     close.addEventListener('click', () => this.toggle(false, true));
     this.#launcher.addEventListener('click', () => this.toggle());
+    this.#reactions.addEventListener('click', () => this.#actions.openActivity('reactions'));
+    this.#comments.addEventListener('click', () => this.#actions.openActivity('comments'));
 
     this.#links.append(
       this.#link(t('bulkSavedTitle'), '/saved/'),
-      this.#soon(t('hubLikesComments')),
+      this.#reactions,
+      this.#comments,
       this.#soon(t('hubUnfollow')),
+      this.#activityHint,
     );
     this.#panel.append(
       h('header', {}, h('h2', { id: 'hub-title' }, t('hubTitle')), close),
@@ -116,7 +126,7 @@ export class Hub {
   }
 
   /** Shows the current page's bulk tool in the panel, or the links to tool pages when null. */
-  setTool(tool: Toolbar<BulkItem> | null): void {
+  setTool(tool: Tool | null, main: HTMLElement | null = null): void {
     if (this.#tool === tool) return;
     this.#tool?.destroy();
     this.#tool = tool;
@@ -124,7 +134,24 @@ export class Hub {
     if (!tool) return;
     this.#toolSlot.append(tool.el);
     this.root.append(tool.dialog);
-    tool.mount();
+    tool.mount(main);
+    this.toggle(true);
+  }
+
+  syncTool(main: HTMLElement | null): void {
+    this.#tool?.sync(main);
+  }
+
+  showActivityLinks(onActivity: boolean): void {
+    this.#reactions.textContent = t(onActivity ? 'hubOpenReactions' : 'bulkReactionsTitle');
+    this.#comments.textContent = t(onActivity ? 'hubOpenComments' : 'bulkCommentsTitle');
+    if (!onActivity) this.showActivityHint(null);
+  }
+
+  showActivityHint(category: ActivityCategory | null): void {
+    this.#activityHint.hidden = !category;
+    if (!category) return;
+    this.#activityHint.textContent = t(category === 'reactions' ? 'hubReactionsHint' : 'hubCommentsHint');
     this.toggle(true);
   }
 
@@ -143,13 +170,7 @@ export class Hub {
 
   #link(label: string, path: string): HTMLElement {
     const button = h('button', { class: 'link', type: 'button' }, label);
-    button.addEventListener('click', () => {
-      // Prefer Facebook's own link: an in-app navigation keeps the page and this panel.
-      const own = [...document.querySelectorAll<HTMLAnchorElement>('a[href]')]
-        .find((a) => new URL(a.href, location.href).pathname.replace(/\/?$/, '/') === path);
-      if (own) own.click();
-      else location.assign(path);
-    });
+    button.addEventListener('click', () => location.assign(path));
     return button;
   }
 

@@ -1,6 +1,6 @@
 /**
  * Runs one bulk action (unsave, unlike, unfollow...) over a list of items,
- * one item at a time, at a human pace, and stops at the first sign of trouble.
+ * one item or batch at a time, and stops at the first sign of trouble.
  *
  * DOM-free: the page adapter supplies `act`, the runner supplies the pacing,
  * the daily budget and the stop rules, so all of that is unit-tested.
@@ -42,17 +42,20 @@ export interface Progress {
   reason?: StopReason;
 }
 
-export interface RunnerDeps<T> {
-  act(item: T, signal: AbortSignal): Promise<ActOutcome>;
+export type RunnerDeps<T> = {
   /** Items left in today's budget. */
   budget(): Promise<number>;
   /** Records completed items against today's budget. */
   spend(count: number): Promise<void>;
   sleep(ms: number, signal: AbortSignal): Promise<void>;
+  withBudgetLock?<R>(job: () => Promise<R>, signal: AbortSignal): Promise<R>;
   random(): number;
   onProgress(progress: Progress): void;
   pace?: Pace;
-}
+} & (
+  | { act(item: T, signal: AbortSignal): Promise<ActOutcome>; actBatch?: never }
+  | { act?: never; actBatch(items: readonly T[], signal: AbortSignal): Promise<ActOutcome> }
+);
 
 const between = (min: number, max: number, r: number) => Math.round(min + (max - min) * r);
 
@@ -70,11 +73,11 @@ export async function runBulk<T>(items: readonly T[], signal: AbortSignal, deps:
   report({});
   let restedAt = 0;
 
-  for (const [index, item] of items.entries()) {
+  for (let index = 0; index < items.length;) {
     if (signal.aborted) return stop('stopped');
     if (index > 0) {
       // Once per completed batch, even when skipped items follow it.
-      const rest = progress.done > 0 && progress.done % pace.batch === 0 && progress.done !== restedAt;
+      const rest = progress.done > restedAt && (deps.actBatch || progress.done % pace.batch === 0);
       if (rest) {
         restedAt = progress.done;
         report({ state: 'resting' });
@@ -88,22 +91,39 @@ export async function runBulk<T>(items: readonly T[], signal: AbortSignal, deps:
       if (signal.aborted) return stop('stopped');
       if (rest) report({ state: 'running' });
     }
-    if ((await deps.budget()) <= 0) return stop('daily-limit');
+    const step = async (): Promise<{ outcome: ActOutcome; count: number }> => {
+      const remaining = await deps.budget();
+      if (signal.aborted) return { outcome: 'stopped', count: 0 };
+      if (remaining <= 0) return { outcome: 'daily-limit', count: 0 };
+      const count = deps.actBatch ? Math.min(pace.batch, remaining, items.length - index) : 1;
+      let outcome: ActOutcome;
+      try {
+        outcome = deps.actBatch
+          ? await deps.actBatch(items.slice(index, index + count), signal)
+          : await deps.act(items[index]!, signal);
+      } catch {
+        outcome = signal.aborted ? 'stopped' : 'unidentified';
+      }
+      if (outcome === 'done') await deps.spend(count);
+      return { outcome, count };
+    };
 
-    let outcome: ActOutcome;
+    let result: Awaited<ReturnType<typeof step>>;
     try {
-      outcome = await deps.act(item, signal);
-    } catch {
-      outcome = signal.aborted ? 'stopped' : 'unidentified';
+      result = deps.withBudgetLock ? await deps.withBudgetLock(step, signal) : await step();
+    } catch (error) {
+      if (signal.aborted) return stop('stopped');
+      throw error;
     }
+    const { outcome, count } = result;
     if (outcome === 'done') {
-      await deps.spend(1);
-      report({ done: progress.done + 1 });
+      report({ done: progress.done + count });
     } else if (outcome === 'skipped') {
-      report({ skipped: progress.skipped + 1 });
+      report({ skipped: progress.skipped + count });
     } else {
       return stop(outcome);
     }
+    index += count;
   }
   report({ state: 'finished' });
   return { ...progress };
@@ -137,6 +157,11 @@ const today = (now = new Date()) =>
 
 /** Today's count in chrome.storage.local, shared by every tab and every bulk action. */
 export const dailyBudget = {
+  // Serialize the check, action and charge across tabs at the same origin.
+  // Release between steps so a resting run does not hold up another tab.
+  withLock<R>(job: () => Promise<R>, signal: AbortSignal): Promise<R> {
+    return navigator.locks.request('fb-sidekick:cleanup-daily', { signal }, job);
+  },
   async remaining(limit = DAILY_LIMIT): Promise<number> {
     const stored = (await chrome.storage.local.get(DAILY_KEY))[DAILY_KEY] as Daily | undefined;
     return limit - (stored?.day === today() ? stored.count : 0);

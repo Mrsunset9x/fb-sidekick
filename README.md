@@ -26,11 +26,18 @@ Facebook removed the **Contacts** list from the right column on desktop for many
 A floating button at the bottom left of every Facebook page opens quick settings (Contacts panel,
 active-only, pause in background tabs) and the clean-up tools. It can be hidden in the popup.
 
-- **Unsave in bulk** on `facebook.com/saved`: tick items (a checkbox appears on each), or select all
-  loaded, **Load all**, then confirm. Items are unsaved one at a time, 3–7 s apart, with a 2–3 minute
-  break after every 25 and at most 200 actions a day across tabs. The run stops at the first control
-  it cannot identify exactly, an unconfirmed result, or any Facebook limit or security message.
-- Removing likes and comments, and unfollowing, are planned (`docs/PLAN-cleanup.md`).
+- **Unsave in bulk** on `facebook.com/saved`. Use the round checkbox on each card, Shift-click for
+  a range, or use **Select all loaded** and **Load all** in the panel. Confirm to unsave selected
+  items one at a time, 3–7 seconds apart.
+- **Remove likes and reactions** and **Delete comments** open their categories in Activity Log.
+  The extension learns each category link from Facebook's sidebar and shows a manual path if the
+  sidebar does not open it. Select rows using Facebook's checkboxes, then confirm in the panel.
+  The extension uses Facebook's **Remove** action for up to
+  25 rows at a time. Comments are permanently deleted and reactions are removed from the posts.
+- Cleanup pauses for 2–3 minutes after 25 unsaves or between Activity Log batches. It counts each
+  verified row against a shared limit of 200 per day across tabs. An unknown control, uncertain
+  result, or Facebook limit or security message stops the run.
+- Bulk unfollow is planned. [Cleanup plan](docs/PLAN-cleanup.md)
 
 ## Contacts controls
 
@@ -132,6 +139,7 @@ Facebook-dependent UI is handled in the finders and strategies below.
 | Names, avatars, dots, groups, previews or timestamps are wrong | `finders` in `frame/contacts.ts` |
 | Clicking a contact no longer opens a chat window | `content/chat-opener.ts` (add a strategy) |
 | Messenger's delete controls are no longer detected | `finders` in `frame/delete.ts` |
+| Activity Log category, selection or confirmation is no longer detected | Label tables and row readers in `cleanup/activity.ts` |
 
 ### Extending it
 
