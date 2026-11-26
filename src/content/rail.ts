@@ -26,11 +26,26 @@ const isOnRightSide = (el: Element): boolean => {
   return r.width >= 240 && r.height > 0 && r.left > innerWidth / 2;
 };
 
+/**
+ * Pages that show a photo, video, reel or story. Their right column is the
+ * media's comments, not the Contacts column, so the panel stays away.
+ */
+const MEDIA_PATH = /(?:^|\/)(?:photo|photos|videos|reel|reels|stories)(?:\/|$)/;
+export const isMediaViewerPath = (path: string): boolean => MEDIA_PATH.test(path) || path.startsWith('/watch/live');
+
+/**
+ * A media viewer opened over the feed is a dialog with its own right column of
+ * comments (role="complementary" too). Either sign means it is not the rail.
+ */
+const isCommentsColumn = (el: Element): boolean =>
+  !!el.closest('[role="dialog"]') || !!el.querySelector('[contenteditable="true"], [role="textbox"]');
+
 export const STRATEGIES: Strategy[] = [
   {
     name: 'complementary-landmark',
-    find: () =>
-      [...document.querySelectorAll<HTMLElement>('[role="complementary"]')].find(isOnRightSide) ?? null,
+    find: () => isMediaViewerPath(location.pathname) ? null :
+      [...document.querySelectorAll<HTMLElement>('[role="complementary"]')]
+        .find((el) => isOnRightSide(el) && !isCommentsColumn(el)) ?? null,
   },
 ];
 
@@ -110,6 +125,8 @@ export class RailWatcher {
       attributeFilter: ['style', 'hidden', 'aria-hidden', 'role'] });
     addEventListener('resize', this.schedule, { passive: true });
     addEventListener('scroll', this.schedule, { passive: true });
+    addEventListener('popstate', this.schedule);
+    (window as { navigation?: EventTarget }).navigation?.addEventListener('navigatesuccess', this.schedule);
     this.schedule();
   }
 
@@ -121,6 +138,8 @@ export class RailWatcher {
     this.#chatRoots = [];
     removeEventListener('resize', this.schedule);
     removeEventListener('scroll', this.schedule);
+    removeEventListener('popstate', this.schedule);
+    (window as { navigation?: EventTarget }).navigation?.removeEventListener('navigatesuccess', this.schedule);
     cancelAnimationFrame(this.#frame);
     this.#frame = 0;
     this.#rail = null;
@@ -133,7 +152,10 @@ export class RailWatcher {
 
   readonly #tick = (): void => {
     this.#frame = 0;
-    if (!this.#rail?.isConnected || !isOnRightSide(this.#rail)) this.#attach(locateRail());
+    // Re-check on every tick: opening a photo changes the route and covers the rail without removing it.
+    if (!this.#rail?.isConnected || !isOnRightSide(this.#rail) || isMediaViewerPath(location.pathname)) {
+      this.#attach(locateRail());
+    }
     const chats = findChatWindows();
     const roots = chats.map((chat) => chat.element);
     for (const root of this.#chatRoots) if (!roots.includes(root)) this.#chatResize.unobserve(root);
